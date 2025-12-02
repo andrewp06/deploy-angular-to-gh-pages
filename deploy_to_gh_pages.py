@@ -3,14 +3,10 @@ import os
 import shutil
 
 GITHUB_URL = "https://www.github.com"
-PROJECT_NAME = ""
-REPO_NAME = ""
-USERNAME = ""
 
 """
 Directions for use:
 
-Replace the project_name, repo_name and Username constants with your github username and your project and repo name.
 For this to work your project must be at the top level of your repository
 You also must have the package angular-cli-ghpages installed. Run "npm install -g angular-cli-ghpages" if not
 
@@ -23,13 +19,16 @@ The program will:
     * delete the local repository
 """
 
-def clone_repo():
-    remote_repo_url = get_repo_url()
+def clone_repo(username, repo_name):
+    remote_repo_url = get_repo_url(username, repo_name)
     if remote_repo_url:
         try:
+            print("clone repo started")
             subproc = subprocess.Popen(["git", "clone", remote_repo_url],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             subproc.wait()
+            print("clone repo finished")
+
             if subproc.returncode:
                 print("finished with error")
                 stdout, _ = subproc.communicate()
@@ -41,71 +40,78 @@ def clone_repo():
     else:
         print("repo url is missing")
 
-def get_repo_url():
-    return f"{GITHUB_URL}/{USERNAME}/{REPO_NAME}.git"
+def get_repo_url(username, repo_name):
+    return f"{GITHUB_URL}/{username}/{repo_name}.git"
 
-def delete_repo():
-    if os.path.exists(REPO_NAME):
-        shutil.rmtree(REPO_NAME)
+def delete_repo(repo_name):
+    if os.path.exists(repo_name):
+        shutil.rmtree(repo_name)
 
-def build_angular():
-    if PROJECT_NAME and USERNAME:
+def build_angular(username, repo_name, project_name):
+    if project_name and username:
         try:
-            subproc = subprocess.Popen(["ng", "build", "--configuration", "production", "--base-href", f'"/{PROJECT_NAME}/"'],
-                cwd=f"{REPO_NAME}/{PROJECT_NAME}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            print("build angular started")
+            subproc = subprocess.Popen(["ng", "build", "--configuration", "production", "--base-href", f'/{project_name}/'],
+                cwd=f"{repo_name}/{project_name}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             subproc.wait()
+            print("build angular finished")
+
             if subproc.returncode:
                 print("finished with error")
                 stdout, _ = subproc.communicate()
                 print(stdout)
         except Exception as e:
             print("Failed to build repository (probably does not exist):", 
-                    REPO_NAME)
+                    repo_name)
             print(e)
     else:
         print("repo or username is missing")
 
-def deploy_angular():
-    if PROJECT_NAME and USERNAME:
+def deploy_angular(username, repo_name, project_name):
+    if project_name and username:
         try:
-            subproc = subprocess.Popen(["npx", "angular-cli-ghpages", f"--dir=dist/{PROJECT_NAME}/browser"],
-                cwd=f"{REPO_NAME}/{PROJECT_NAME}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            print("deploy agular started")
+            subproc = subprocess.Popen(["npx", "angular-cli-ghpages", f"--dir=dist/{project_name}/browser"],
+                cwd=f"{repo_name}/{project_name}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             subproc.wait()
+            print("deploy agular finished")
+
             if subproc.returncode:
                 print("finished with error")
                 stdout, _ = subproc.communicate()
                 print(stdout)
         except Exception as e:
             print("Failed to deploy repository (probably does not exist):", 
-                    REPO_NAME)
+                    repo_name)
             print(e)
     else:
         print("repo or username is missing")
 
-def angular_install():
-    if PROJECT_NAME and USERNAME:
+def angular_install(username, repo_name, project_name):
+    if project_name and username:
         try:
+            print("angular_install started")
             subproc = subprocess.Popen(["npm", "install"],
-                cwd=f"{REPO_NAME}/{PROJECT_NAME}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                cwd=f"{repo_name}/{project_name}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             subproc.wait()
+            print("angular_install complete")
             if subproc.returncode:
                 print("finished with error")
                 stdout, _ = subproc.communicate()
                 print(stdout)
         except Exception as e:
             print("Failed to install dependancies (probably does not exist):", 
-                    PROJECT_NAME)
+                    project_name)
             print(e)
     else:
         print("repo or username is missing")
 
 
-def main():
-    clone_repo()
-    angular_install()
-    build_angular()
-    deploy_angular()
-    delete_repo()
-
-if __name__ == "__main__":
-    main()
+def run_all(username, repo_name, project_name = None):
+    if project_name is None:
+        project_name = repo_name
+    clone_repo(username, repo_name)
+    angular_install(username, repo_name, project_name)
+    build_angular(username, repo_name, project_name)
+    deploy_angular(username, repo_name, project_name)
+    delete_repo(repo_name)
